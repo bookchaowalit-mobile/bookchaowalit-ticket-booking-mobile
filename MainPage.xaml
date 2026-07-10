@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="TicketBooking.MainPage">
+    <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="12">
+        <Label Text="Ticket Booking" FontSize="28" FontAttributes="Bold" HorizontalOptions="Center" />
+        <Label Text="Ticket Booking — Mobile app (maui)" HorizontalOptions="Center" HorizontalTextAlignment="Center" />
+    </VerticalStackLayout>
+</ContentPage>
