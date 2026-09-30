@@ -12,4 +12,11 @@
     <PackageReference Include="Microsoft.Maui.Controls" Version="8.0.*" />
     <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="8.0.*" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- core library and tests are separate projects; keep them out of the app's default globs -->
+    <Compile Remove="src/**;tests/**" />
+    <None Remove="src/**;tests/**" />
+    <MauiXaml Remove="src/**;tests/**" />
+    <ProjectReference Include="src/TicketBooking.Core/TicketBooking.Core.csproj" />
+  </ItemGroup>
 </Project>
