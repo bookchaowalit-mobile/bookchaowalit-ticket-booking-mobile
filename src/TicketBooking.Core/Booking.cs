@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace TicketBooking.Core;
 
 public enum SeatTier { Standard, Premium, Vip }
@@ -12,7 +14,8 @@ public readonly record struct SeatId(char Row, int Number)
     public static SeatId Parse(string text)
     {
         var t = text.Trim().ToUpperInvariant();
-        if (t.Length < 2 || t[0] < 'A' || t[0] > 'Z' || !int.TryParse(t.AsSpan(1), out var n) || n < 1)
+        // Digits only after the row letter: rejects "A+1", "A 1", "A-1".
+        if (t.Length < 2 || t[0] < 'A' || t[0] > 'Z' || !int.TryParse(t.AsSpan(1), NumberStyles.None, CultureInfo.InvariantCulture, out var n) || n < 1)
             throw new FormatException($"invalid seat id '{text}'");
         return new SeatId(t[0], n);
     }
@@ -59,15 +62,22 @@ public sealed class SeatMap
     /// <summary>
     /// True when the selection would leave a single empty seat stranded between
     /// taken seats (or a wall) in any affected row — the classic "no orphan seat" rule.
+    /// Orphans that already existed before this selection (e.g. after an expired
+    /// hold or a cancellation) do not block unrelated selections in the same row.
     /// </summary>
     public bool LeavesOrphanSeat(IReadOnlyCollection<SeatId> selection)
     {
         foreach (var row in selection.Select(s => s.Row).Distinct())
         {
             var r = row - 'A';
-            bool Taken(int c) => c < 0 || c >= SeatsPerRow || _state[r, c] != SeatState.Available || selection.Contains(new SeatId(row, c + 1));
+            bool TakenBefore(int c) => c < 0 || c >= SeatsPerRow || _state[r, c] != SeatState.Available;
+            bool TakenAfter(int c) => TakenBefore(c) || selection.Contains(new SeatId(row, c + 1));
             for (var c = 0; c < SeatsPerRow; c++)
-                if (!Taken(c) && Taken(c - 1) && Taken(c + 1)) return true;
+            {
+                var orphanAfter = !TakenAfter(c) && TakenAfter(c - 1) && TakenAfter(c + 1);
+                var orphanBefore = !TakenBefore(c) && TakenBefore(c - 1) && TakenBefore(c + 1);
+                if (orphanAfter && !orphanBefore) return true;
+            }
         }
         return false;
     }
@@ -89,7 +99,7 @@ public sealed class BookingService
     private readonly PriceList _prices;
     private readonly TimeSpan _holdFor;
     private readonly Dictionary<string, Hold> _holds = new();
-    private int _sequence;
+    private long _sequence;
 
     public BookingService(SeatMap map, PriceList prices, TimeSpan holdFor)
     {
@@ -149,9 +159,12 @@ public sealed class BookingService
     {
         // Short, unambiguous (no 0/O/1/I) reference derived from a counter; unique per service instance.
         const string alphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
-        var n = ++_sequence * 7919 + 104729;
+        // 7919 is odd, so seq -> (seq * 7919 + 104729) mod 32^6 is a bijection: no repeats
+        // for 32^6 (~1.07 billion) holds, and no int overflow / negative index.
+        const long space = 1L << 30; // 32^6
+        var n = (++_sequence * 7919L + 104729L) % space;
         var chars = new char[6];
-        for (var i = 5; i >= 0; i--) { chars[i] = alphabet[n % alphabet.Length]; n /= alphabet.Length; }
+        for (var i = 5; i >= 0; i--) { chars[i] = alphabet[(int)(n % alphabet.Length)]; n /= alphabet.Length; }
         return new string(chars);
     }
 }

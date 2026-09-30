@@ -2,10 +2,7 @@
 <Shell xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
        xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
        xmlns:local="clr-namespace:TicketBooking"
-       x:Class="TicketBooking.AppShell">
-    <TabBar>
-        <ShellContent Title="Home" ContentTemplate="{DataTemplate local:MainPage}" />
-        <ShellContent Title="Explore" ContentTemplate="{DataTemplate local:ExplorePage}" />
-        <ShellContent Title="Profile" ContentTemplate="{DataTemplate local:ProfilePage}" />
-    </TabBar>
+       x:Class="TicketBooking.AppShell"
+       Title="Ticket Booking">
+    <ShellContent Title="Seats" ContentTemplate="{DataTemplate local:MainPage}" Route="seats" />
 </Shell>

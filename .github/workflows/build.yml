@@ -19,6 +19,30 @@ jobs:
         with:
           dotnet-version: '8.0.x'
       - run: dotnet test tests/TicketBooking.Core.Tests --configuration Release
-  # The MAUI app project is not built in CI yet: it is missing App.xaml,
-  # MauiProgram.cs, platform folders and two referenced pages. See
-  # docs/UPGRADE-PLAN.md (P0) — add a MAUI job once the app compiles.
+
+  app-shared:
+    name: App XAML/C# compile check (no workload)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      # Release enables XamlC, which fails on unresolved XAML types/members.
+      - run: dotnet build TicketBooking.csproj --configuration Release -p:MauiSharedCheck=true
+
+  android:
+    name: Android build (MAUI workload)
+    runs-on: ubuntu-latest
+    needs: [core, app-shared]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - run: dotnet workload install maui-android
+      - run: dotnet build TicketBooking.csproj -f net8.0-android --configuration Debug
