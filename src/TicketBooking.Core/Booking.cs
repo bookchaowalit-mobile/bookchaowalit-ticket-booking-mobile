@@ -103,8 +103,15 @@ public sealed class BookingService
 
     public BookingService(SeatMap map, PriceList prices, TimeSpan holdFor)
     {
+        if (holdFor <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(holdFor), "hold duration must be positive");
         _map = map; _prices = prices; _holdFor = holdFor;
     }
+
+    private static readonly char[] Invisible = { '\u200B', '\u200C', '\u200D', '\u2060', '\uFEFF' };
+
+    /// <summary>Trims and drops zero-width characters that pasted codes often carry.</summary>
+    private static string Clean(string text) =>
+        new string(text.Where(c => Array.IndexOf(Invisible, c) < 0).ToArray()).Trim();
 
     /// <summary>Promo codes: percentage off the subtotal (fees are never discounted).</summary>
     public static readonly IReadOnlyDictionary<string, int> PromoPercent = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
@@ -115,8 +122,10 @@ public sealed class BookingService
 
     public Quote Price(IReadOnlyList<SeatId> seats, string? promo = null)
     {
+        // Same rule as HoldSeats: a seat listed twice must not be charged twice.
+        if (seats.Distinct().Count() != seats.Count) throw new ArgumentException("duplicate seat in selection");
         var subtotal = seats.Sum(s => _prices.Of(_map.TierOf(s)));
-        var pct = promo is not null && PromoPercent.TryGetValue(promo.Trim(), out var p) ? p : 0;
+        var pct = promo is not null && PromoPercent.TryGetValue(Clean(promo), out var p) ? p : 0;
         var discount = Math.Round(subtotal * pct / 100m, 2, MidpointRounding.AwayFromZero);
         var fees = _prices.FeePerTicket * seats.Count;
         return new Quote(seats, subtotal, discount, fees, subtotal - discount + fees);
@@ -142,6 +151,8 @@ public sealed class BookingService
     public void Confirm(string reference, DateTimeOffset now)
     {
         ReleaseExpired(now);
+        // References are shown to the user, who may retype them in lower case or with spaces.
+        reference = Clean(reference).ToUpperInvariant();
         if (!_holds.Remove(reference, out var hold)) throw new InvalidOperationException($"hold {reference} not found or expired");
         foreach (var s in hold.Seats) _map.Set(s, SeatState.Booked);
     }

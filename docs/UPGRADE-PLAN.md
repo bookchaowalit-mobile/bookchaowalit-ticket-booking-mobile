@@ -37,3 +37,11 @@ compiles (XamlC) against the core; platform heads are CI-built only, no persiste
 - `MauiSharedCheck=true` build switch: compiles the shared XAML/C# as `net8.0`
   without the workload (verified locally, Release/XamlC, 0 warnings).
 - CI: new `app-shared` job (that check) and `android` job (`maui-android` workload build).
+
+## Done in this pass (pass 3)
+
+- Fixed `Price`: a seat listed twice was charged twice (HoldSeats rejected duplicates, but the quote shown before holding did not); now throws like `HoldSeats`.
+- Promo codes ignore zero-width characters and a BOM (`"EARLYBIRD​"` from a paste silently got no discount; .NET `Trim()` keeps U+200B/U+FEFF).
+- `Confirm` accepts the hold reference in lower case / padded, as users retype it.
+- `BookingService` rejects a zero or negative hold duration (every hold expired instantly).
+- 7 new test cases (26 total), verified with `dotnet test tests/TicketBooking.Core.Tests` and `dotnet build TicketBooking.csproj -c Release -p:MauiSharedCheck=true` (0 warnings).
