@@ -1,15 +1,50 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net8.0-android;net8.0-ios</TargetFrameworks>
-    <OutputType>Exe</OutputType>
-    <RootNamespace>com.bookchaowalit.ticketbooking</RootNamespace>
+    <!-- iOS needs macOS to build; Linux hosts (incl. CI) build Android only. -->
+    <TargetFrameworks>net8.0-android</TargetFrameworks>
+    <TargetFrameworks Condition="!$([MSBuild]::IsOSPlatform('linux'))">$(TargetFrameworks);net8.0-ios</TargetFrameworks>
+    <!-- Workload-free compile check of the shared XAML/C# (no Platforms/):
+         dotnet build TicketBooking.csproj -p:MauiSharedCheck=true -->
+    <TargetFrameworks Condition="'$(MauiSharedCheck)' == 'true'">net8.0</TargetFrameworks>
+    <OutputType Condition="'$(TargetFramework)' != 'net8.0'">Exe</OutputType>
+    <RootNamespace>TicketBooking</RootNamespace>
     <UseMaui>true</UseMaui>
     <SingleProject>true</SingleProject>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
     <ApplicationTitle>Ticket Booking</ApplicationTitle>
-    <ApplicationIdGuid>a1b2c3d4-e5f6-7890-abcd-ef1234567890</ApplicationIdGuid>
+    <ApplicationId>com.bookchaowalit.ticketbooking</ApplicationId>
+    <ApplicationIdGuid>a0d4f484-385c-4cee-837e-902dedc3a419</ApplicationIdGuid>
+    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+    <ApplicationVersion>1</ApplicationVersion>
+
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">11.0</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
   </PropertyGroup>
+
+  <ItemGroup>
+    <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#B4232A" />
+    <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#B4232A" BaseSize="128,128" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.Maui.Controls" Version="8.0.*" />
     <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="8.0.*" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- core library and tests are separate projects; keep them out of the app's default globs -->
+    <Compile Remove="src/**;tests/**" />
+    <None Remove="src/**;tests/**" />
+    <MauiXaml Remove="src/**;tests/**" />
+    <ProjectReference Include="src/TicketBooking.Core/TicketBooking.Core.csproj" />
+  </ItemGroup>
+
+  <!-- The shared check has no platform head; platform code is only compiled by the real TFMs. -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+    <Compile Remove="Platforms/**" />
+    <None Remove="Platforms/**" />
   </ItemGroup>
 </Project>

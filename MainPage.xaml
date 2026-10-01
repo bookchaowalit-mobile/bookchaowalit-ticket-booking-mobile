@@ -1,9 +1,25 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="TicketBooking.MainPage">
-    <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="12">
-        <Label Text="Ticket Booking" FontSize="28" FontAttributes="Bold" HorizontalOptions="Center" />
-        <Label Text="Ticket Booking — Mobile app (maui)" HorizontalOptions="Center" HorizontalTextAlignment="Center" />
-    </VerticalStackLayout>
+             x:Class="TicketBooking.MainPage"
+             Title="Seats">
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="12">
+            <Label Text="Ticket Booking" FontSize="28" FontAttributes="Bold"
+                   SemanticProperties.HeadingLevel="Level1" />
+            <Label Text="SCREEN" HorizontalOptions="Center" FontAttributes="Bold" />
+            <Grid x:Name="SeatGrid" ColumnSpacing="4" RowSpacing="4" HorizontalOptions="Center" />
+            <Label Text="Rows A–B VIP · C–E Premium · F–H Standard. Grey = taken." FontSize="12" />
+            <Entry x:Name="PromoEntry" Placeholder="Promo code (optional)" TextChanged="OnPromoChanged"
+                   SemanticProperties.Description="Promo code" />
+            <Label x:Name="QuoteLabel" Text="Select up to 8 seats." />
+            <HorizontalStackLayout Spacing="12">
+                <Button x:Name="HoldButton" Text="Hold seats" Clicked="OnHoldClicked" IsEnabled="False"
+                        SemanticProperties.Hint="Reserves the selected seats for 10 minutes" />
+                <Button x:Name="ConfirmButton" Text="Confirm" Clicked="OnConfirmClicked" IsEnabled="False"
+                        SemanticProperties.Hint="Books the held seats" />
+            </HorizontalStackLayout>
+            <Label x:Name="MessageLabel" />
+        </VerticalStackLayout>
+    </ScrollView>
 </ContentPage>

@@ -6,14 +6,43 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
-  build:
-    name: Build
+  core:
+    name: Core library (build + unit tests)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - run: dotnet workload restore || true
-      - run: dotnet build || true
+      - run: dotnet test tests/TicketBooking.Core.Tests --configuration Release
+
+  app-shared:
+    name: App XAML/C# compile check (no workload)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      # Release enables XamlC, which fails on unresolved XAML types/members.
+      - run: dotnet build TicketBooking.csproj --configuration Release -p:MauiSharedCheck=true
+
+  android:
+    name: Android build (MAUI workload)
+    runs-on: ubuntu-latest
+    needs: [core, app-shared]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - run: dotnet workload install maui-android
+      - run: dotnet build TicketBooking.csproj -f net8.0-android --configuration Debug
